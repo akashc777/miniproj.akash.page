@@ -91,7 +91,7 @@ func getCPUUsage() float64 {
   }
   sort.Sort(ByUsage(procinfos))
 
-  if len(procinfos) > 0{ 
+  if len(procinfos) > 0{
   for _, p := range procinfos[:1]{
  	return  p.Usage
   }
@@ -401,7 +401,7 @@ func (n *Node) updateFollowers() {
 		if n.Log.LastIndex() < peer.NextIndex {
 			// heartbeat
 			_, prevLogIndex, prevLogTerm := n.Log.GetEntryForRequest(n.Log.LastIndex())
-			er = newEntryRequest(-1, n.ID, n.Term, prevLogIndex, prevLogTerm, []byte("NOP"))
+			er = newEntryRequest(-1, n.ID, n.Term, prevLogIndex, prevLogTerm, []byte("NOP"), nil)
 		} else {
 			entry, prevLogIndex, prevLogTerm := n.Log.GetEntryForRequest(peer.NextIndex)
 			er = newEntryRequest(entry.CmdID, n.ID, n.Term, prevLogIndex, prevLogTerm, entry.Data)
@@ -423,7 +423,8 @@ func (n *Node) updateFollowers() {
 		log.Printf("\n\n%v\n\n", h)
 
 		if len(h)==len(n.Cluster) {
-			log.Printf("\n\n%v\n\n", h)
+			log.Printf("\nAppending to leader log\n%v\n\n", h)
+
 			e := Entry{CmdID: er.CmdID, Index: n.Log.LastIndex()+1, Term: n.Term, NodeHealth: h, Data:[]byte("NOP")}
 			n.Log.Append(&e)
 		}
