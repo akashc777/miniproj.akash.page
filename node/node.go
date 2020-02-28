@@ -423,7 +423,7 @@ func (n *Node) updateFollowers() {
 		log.Printf("\n\n%v\n\n", h)
 
 		if len(h)==len(n.Cluster) {
-			log.Printf("\n\n%v\n\n", h)
+			log.Printf("\nAppending to leader node\n%v\n\n", h)
 			e := Entry{CmdID: er.CmdID, Index: n.Log.LastIndex()+1, Term: n.Term, NodeHealth: h, Data:[]byte("NOP")}
 			n.Log.Append(&e)
 		}
