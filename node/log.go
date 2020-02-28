@@ -18,7 +18,7 @@ type Entry struct {
 	Index int64
 	Term  int64
 	Data  []byte
-	NodeHealth map[string] Health
+	NodeHealth map[string]Health
 }
 
 type Log struct {

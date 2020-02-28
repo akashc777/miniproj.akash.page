@@ -182,6 +182,7 @@ func (t *HTTPTransport) RequestVoteRPC(address string, voteRequest VoteRequest) 
 }
 
 func (t *HTTPTransport) AppendEntriesRPC(address string, entryRequest EntryRequest) (EntryResponse, error) {
+	var er EntryResponse
 	endpoint := fmt.Sprintf("http://%s/append_entries", address)
 	log.Printf("[%s] AppendEntriesRPC %+v to %s", t.node.ID, entryRequest, endpoint)
 	respdata, err := apiRequest("POST", endpoint, entryRequest, 500*time.Millisecond)
@@ -189,7 +190,9 @@ func (t *HTTPTransport) AppendEntriesRPC(address string, entryRequest EntryReque
 		return EntryResponse{}, err
 	}
 
+	err = json.Unmarshal(respdata, &er)
+
 	fmt.Printf("\n\n%v\n\n", respdata)
 
-	return EntryResponse{}, nil
+	return er, nil
 }

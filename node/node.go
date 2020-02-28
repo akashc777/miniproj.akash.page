@@ -51,6 +51,8 @@ import (
 	"sort"
 )
 
+var h=make(map[string]Health)
+
 type ProcInfo struct{
 	Name  string
 	Usage float64
@@ -124,6 +126,7 @@ type Node struct {
 	Cluster      []*Peer
 	Uncommitted  map[int64]*CommandRequest
 
+	Entries	     int64
 	Log          Logger
 	Transport    Transporter
 	StateMachine Applyer
@@ -152,7 +155,7 @@ func NewNode(id string, transport Transporter, logger Logger, applyer Applyer) *
 
 		Uncommitted: make(map[int64]*CommandRequest),
 
-		ElectionTimeout: 500 * time.Millisecond,
+		ElectionTimeout: 1000 * time.Millisecond,
 
 		exitChan:                  make(chan int),
 		voteResponseChan:          make(chan VoteResponse),
@@ -177,7 +180,7 @@ func (n *Node) Exit() error {
 	return n.Transport.Close()
 }
 
-func (n *Node) AddToCluster(member string) {
+func (n *Node) AddToCluster(member string){
 	p := &Peer{
 		ID: member,
 	}
@@ -231,7 +234,7 @@ func (n *Node) ioLoop() {
 	log.Printf("[%s] starting ioLoop()", n.ID)
 
 	electionTimer := time.NewTimer(n.randomElectionTimeout())
-	followerTimer := time.NewTicker(250 * time.Millisecond)
+	followerTimer := time.NewTicker(500 * time.Millisecond)
 	for {
 		select {
 		case vreq := <-n.requestVoteChan:
@@ -395,18 +398,19 @@ func (n *Node) updateFollowers() {
 		return
 	}
 
-	h := make(map[string]Health)
-
+	f:= 0
 	for _, peer := range n.Cluster {
+		f++
+		log.Printf("\n\nLast log index: %v\npeer next index: %v", n.Log.LastIndex(), peer.NextIndex)
+
 		if n.Log.LastIndex() < peer.NextIndex {
 			// heartbeat
 			_, prevLogIndex, prevLogTerm := n.Log.GetEntryForRequest(n.Log.LastIndex())
 			er = newEntryRequest(-1, n.ID, n.Term, prevLogIndex, prevLogTerm, []byte("NOP"), nil)
 		} else {
 			entry, prevLogIndex, prevLogTerm := n.Log.GetEntryForRequest(peer.NextIndex)
-			er = newEntryRequest(entry.CmdID, n.ID, n.Term, prevLogIndex, prevLogTerm, entry.Data)
+			er = newEntryRequest(entry.CmdID, n.ID, n.Term, prevLogIndex, prevLogTerm, entry.Data, h)
 		}
-
 		log.Printf("[%s] updating follower %s - %+v", n.ID, peer.ID, er)
 		respData, err := n.Transport.AppendEntriesRPC(peer.ID, er)
 		if err != nil {
@@ -417,17 +421,19 @@ func (n *Node) updateFollowers() {
 			}
 			continue
 		}
+		 h[peer.ID] = respData.Stat
+		 log.Printf("Length of h: %v", len(h))
+		if (len(h)>=(len(n.Cluster))) && f==2 {
+                        h[n.Transport.String()] = Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}
+                        log.Printf("\n\nAppending to leader log\n%v\n\n", h)
+                        c := n.Entries
+                        n.Uncommitted[n.Entries] = &CommandRequest{}
+                        n.Entries++
+			e := Entry{CmdID: c, Index: n.Log.LastIndex()+1, Term: n.Term, NodeHealth: h, Data:[]byte("NOP")}
+                        log.Printf("\n\nEntry value: %v\n CmdID value: %v\n\n", e, c)
+                        n.Log.Append(&e)
+                }
 
-
-		h[peer.ID] = respData.Stat
-		log.Printf("\n\n%v\n\n", h)
-
-		if len(h)==len(n.Cluster) {
-			Log.Printf("\nAppending to leader log\n%v\n\n", h)
->>>>>>> 25c388e42145c843b04b42ab2574e2e3ff6c5718
-			e := Entry{CmdID: er.CmdID, Index: n.Log.LastIndex()+1, Term: n.Term, NodeHealth: h, Data:[]byte("NOP")}
-			n.Log.Append(&e)
-		}
 
 		if er.CmdID == -1 {
 			// skip commit checks for heartbeats
@@ -451,7 +457,7 @@ func (n *Node) updateFollowers() {
 			if err != nil {
 				// TODO: what do we do here?
 			}
-			cr.ResponseChan <- CommandResponse{LeaderID: n.VotedFor, Success: true}
+			//cr.ResponseChan <- CommandResponse{LeaderID: n.VotedFor, Success: true}
 		}
 		peer.NextIndex++
 	}
@@ -554,7 +560,7 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 	if bytes.Compare(er.Data, []byte("NOP")) == 0 {
 		log.Printf("[%s] HEARTBEAT", n.ID)
 		log.Printf("\n\n%v\n%v\n\n", getCPUUsage(),getMemUsage())
-		return EntryResponse{Term: n.Term, Success: err == nil, Stat: Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}}, nil
+	//	return EntryResponse{Term: n.Term, Success: err == nil, Stat: Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}}, nil
 	}
 
 	e := &Entry{
@@ -562,6 +568,7 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 		Index: er.PrevLogIndex + 1,
 		Term:  er.Term,
 		Data:  er.Data,
+		NodeHealth:  er.Stat,
 	}
 
 	log.Printf("[%s] ... appending %+v", n.ID, e)
