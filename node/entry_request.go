@@ -7,6 +7,7 @@ type EntryRequest struct {
 	PrevLogIndex int64  `json:"prev_log_index"`
 	PrevLogTerm  int64  `json:"prev_log_term"`
 	Data         []byte `json:"data"`
+	Stat    []Health  `json:"stat"`
 }
 
 type EntryResponse struct {
@@ -15,7 +16,7 @@ type EntryResponse struct {
   Stat    Health  `json:"stat"`
 }
 
-func newEntryRequest(cmdID int64, leaderID string, term int64, prevLogIndex int64, prevLogTerm int64, data []byte) EntryRequest {
+func newEntryRequest(cmdID int64, leaderID string, term int64, prevLogIndex int64, prevLogTerm int64, data []byte, h []Health) EntryRequest {
 	return EntryRequest{
 		CmdID:        cmdID,
 		LeaderID:     leaderID,
@@ -23,5 +24,6 @@ func newEntryRequest(cmdID int64, leaderID string, term int64, prevLogIndex int6
 		PrevLogIndex: prevLogIndex,
 		PrevLogTerm:  prevLogTerm,
 		Data:         data,
+		Stat:					h,
 	}
 }
