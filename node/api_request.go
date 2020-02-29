@@ -41,7 +41,7 @@ func newDeadlineTransport(timeout time.Duration) *http.Transport {
 	return transport
 }
 
-func apiRequest(method string, endpoint string, body interface{}, timeout time.Duration) (*simplejson.Json, error) {
+func apiRequest(method string, endpoint string, body interface{}, timeout time.Duration) ([]byte, error) {
 	httpclient := &http.Client{Transport: newDeadlineTransport(timeout)}
 
 	js, err := json.Marshal(body)
@@ -76,5 +76,5 @@ func apiRequest(method string, endpoint string, body interface{}, timeout time.D
 	}
 
   fmt.Println("Request sent ", data)
-	return data, err
+	return rb, err
 }

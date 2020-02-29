@@ -46,9 +46,12 @@ import (
 	"sync"
 	"time"
 	//"fmt"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
-	"sort"
+	//"sort"
+	//"os/exec"
+	"encoding/binary"
+	"math"
 )
 
 var h=make(map[string]Health)
@@ -66,52 +69,27 @@ func (a ByUsage) Less(i, j int) bool {
 	return a[i].Usage > a[j].Usage
 }
 
+
+
+func Float64frombytes(bytes []byte) float64 {
+    bits := binary.LittleEndian.Uint64(bytes)
+    float := math.Float64frombits(bits)
+    return float
+}
+
+
+
+
+
 func getCPUUsage() float64 {
-	// var c []float64
-	//
-	//
-  // for n := 0 ;n<2; n++{
-  //   processes, _ := process.Processes()
-  //   for _, p := range processes{
-  //     a, _ := p.CPUPercent()
-  //     n, _ := p.Name()
-  // 		if n == "usage"{
-  // 			c = append(c, a)
-  //       break
-  // 		}
-  //   }
-	//
-  // }
 
-	processes, _ := process.Processes()
-
-  var procinfos []ProcInfo
-  for _, p := range processes{
-    a, _ := p.CPUPercent()
-    n, _ := p.Name()
-    procinfos = append(procinfos, ProcInfo{n, a})
-  }
-  sort.Sort(ByUsage(procinfos))
-
-  if len(procinfos) > 0{
-  for _, p := range procinfos[:1]{
- 	return  p.Usage
-  }
-  }
-
-  var m float64
-	// for i, e := range c {
-	//   if i==0 || e > m {
-	//       m = e
-	//   }
-	// }
-
-	return m
+	percent, _ := cpu.Percent(0, true)
+	return percent[0]
 }
 
 func getMemUsage() float64 {
 	v, _ := mem.VirtualMemory()
-	return float64(v.Total)
+	return float64(v.UsedPercent)
 }
 
 type Node struct {
@@ -423,7 +401,7 @@ func (n *Node) updateFollowers() {
 		}
 		 h[peer.ID] = respData.Stat
 		 log.Printf("Length of h: %v", len(h))
-		if (len(h)>=(len(n.Cluster))) && f==2 {
+		if (len(h)>=(len(n.Cluster))) && f==len(n.Cluster) {
                         h[n.Transport.String()] = Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}
                         log.Printf("\n\nAppending to leader log\n%v\n\n", h)
                         c := n.Entries

@@ -166,18 +166,20 @@ func (t *HTTPTransport) commandHandler(w http.ResponseWriter, req *http.Request)
 }
 
 func (t *HTTPTransport) RequestVoteRPC(address string, voteRequest VoteRequest) (VoteResponse, error) {
+	var vresp VoteResponse
 	endpoint := fmt.Sprintf("http://%s/request_vote", address)
 	log.Printf("[%s] RequestVoteRPC %+v to %s", t.node.ID, voteRequest, endpoint)
 	data, err := apiRequest("POST", endpoint, voteRequest, 100*time.Millisecond)
 	if err != nil {
 		return VoteResponse{}, err
 	}
-	term, _ := data.Get("term").Int64()
-	voteGranted, _ := data.Get("vote_granted").Bool()
-	vresp := VoteResponse{
-		Term:        term,
-		VoteGranted: voteGranted,
-	}
+	//term, _ := data.Get("term").Int64()
+	//voteGranted, _ := data.Get("vote_granted").Bool()
+	//vresp := VoteResponse{
+	//	Term:        term,
+	//	VoteGranted: voteGranted,
+	//}
+	err = json.Unmarshal(data, &vresp)
 	return vresp, nil
 }
 
@@ -185,14 +187,13 @@ func (t *HTTPTransport) AppendEntriesRPC(address string, entryRequest EntryReque
 	var er EntryResponse
 	endpoint := fmt.Sprintf("http://%s/append_entries", address)
 	log.Printf("[%s] AppendEntriesRPC %+v to %s", t.node.ID, entryRequest, endpoint)
-	respdata, err := apiRequest("POST", endpoint, entryRequest, 500*time.Millisecond)
+	data, err := apiRequest("POST", endpoint, entryRequest, 500*time.Millisecond)
 	if err != nil {
 		return EntryResponse{}, err
 	}
-
-	err = json.Unmarshal(respdata, &er)
-
-	fmt.Printf("\n\n%v\n\n", respdata)
+	
+	err = json.Unmarshal(data, &er)
+	//fmt.Printf("\n\n%v\n\n", respdata)
 
 	return er, nil
 }

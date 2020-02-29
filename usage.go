@@ -1,54 +1,25 @@
-// file: gotop.go
 package main
 
 import (
-  //"log"
-  //"time"
-  //"sort"
-  "fmt"
-  "github.com/shirou/gopsutil/process"
+"fmt"
+"github.com/shirou/gopsutil/cpu"
+"time"
 )
 
-
-type ProcInfo struct{
-  Name  string
-  Usage float64
-}
-
-type ByUsage []ProcInfo
-
-func (a ByUsage) Len() int      { return len(a) }
-func (a ByUsage) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ByUsage) Less(i, j int) bool {
-  return a[i].Usage > a[j].Usage
-}
-
-
 func main() {
-
-  var c []float64
-
-
-  for n := 0 ;n<2; n++{
-    processes, _ := process.Processes()
-    for _, p := range processes{
-      a, _ := p.CPUPercent()
-      n, _ := p.Name()
-  		if n == "usage"{
-  			c = append(c, a)
-        break
-  		}
-    }
-
-  }
-
-  m := 0
-  for i, e := range c {
-    if i==0 || e > m {
-        m = e
-    }
-  }
-
-  fmt.Println(m)
-
+   //Percent calculates the percentage of cpu used either per CPU or combined.
+   percent, _ := cpu.Percent(2*time.Second, false)
+   fmt.Printf("\npercent val: %v\nlength : %v",percent, len(percent))
+   var sum float64
+   for _,val := range percent{
+     sum += val
+   }
+   fmt.Printf("\n%v\n", sum/(float64(len(percent))))
+//   fmt.Printf("  User: %.2f\n",percent[cpu.CPUser])
+//   fmt.Printf("  Nice: %.2f\n",percent[cpu.CPNice])
+//   fmt.Printf("   Sys: %.2f\n",percent[cpu.CPSys])
+//   fmt.Printf("  Intr: %.2f\n",percent[cpu.CPIntr])
+//   fmt.Printf("  Idle: %.2f\n",percent[cpu.CPIdle])
+//   fmt.Printf("States: %.2f\n",percent[cpu.CPUStates])
 }
+
