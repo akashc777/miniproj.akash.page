@@ -83,7 +83,7 @@ func Float64frombytes(bytes []byte) float64 {
 
 func getCPUUsage() float64 {
 
-	percent, _ := cpu.Percent(0, true)
+	percent, _ := cpu.Percent(time.Second, true)
 	return percent[0]
 }
 
@@ -133,7 +133,7 @@ func NewNode(id string, transport Transporter, logger Logger, applyer Applyer) *
 
 		Uncommitted: make(map[int64]*CommandRequest),
 
-		ElectionTimeout: 1000 * time.Millisecond,
+		ElectionTimeout: 4 * time.Second,
 
 		exitChan:                  make(chan int),
 		voteResponseChan:          make(chan VoteResponse),
@@ -212,7 +212,7 @@ func (n *Node) ioLoop() {
 	log.Printf("[%s] starting ioLoop()", n.ID)
 
 	electionTimer := time.NewTimer(n.randomElectionTimeout())
-	followerTimer := time.NewTicker(500 * time.Millisecond)
+	followerTimer := time.NewTicker(3 * time.Second)
 	for {
 		select {
 		case vreq := <-n.requestVoteChan:
@@ -391,6 +391,7 @@ func (n *Node) updateFollowers() {
 		}
 		log.Printf("[%s] updating follower %s - %+v", n.ID, peer.ID, er)
 		respData, err := n.Transport.AppendEntriesRPC(peer.ID, er)
+		time.Sleep(1)
 		if err != nil {
 			log.Printf("[%s] error in AppendEntriesRPC() to %s - %s", n.ID, peer.ID, err)
 			peer.NextIndex--

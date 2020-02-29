@@ -187,7 +187,7 @@ func (t *HTTPTransport) AppendEntriesRPC(address string, entryRequest EntryReque
 	var er EntryResponse
 	endpoint := fmt.Sprintf("http://%s/append_entries", address)
 	log.Printf("[%s] AppendEntriesRPC %+v to %s", t.node.ID, entryRequest, endpoint)
-	data, err := apiRequest("POST", endpoint, entryRequest, 500*time.Millisecond)
+	data, err := apiRequest("POST", endpoint, entryRequest, 3*time.Second)
 	if err != nil {
 		return EntryResponse{}, err
 	}
