@@ -19,6 +19,7 @@ type Entry struct {
 	Term  int64
 	Data  []byte
 	NodeHealth map[string]Health
+	State string
 }
 
 type Log struct {
