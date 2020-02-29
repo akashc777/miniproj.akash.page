@@ -40,7 +40,7 @@
 package node
 
 import (
-	"bytes"
+//	"bytes"
 	"log"
 	"math/rand"
 	"sync"
@@ -104,7 +104,7 @@ type Node struct {
 	Cluster      []*Peer
 	Uncommitted  map[int64]*CommandRequest
 
-	Commit		   int64
+	Commit		   int
 
 	Entries	     int64
 	Log          Logger
@@ -380,22 +380,22 @@ func (n *Node) updateFollowers() {
 	if n.State != Leader {
 		return
 	}
-	if(n.Commit < len(n.Cluster){
-		n.Commit++
-	}
 
 	f:= 0
 	for _, peer := range n.Cluster {
 		f++
+		if n.Commit < len(n.Cluster){
+                	n.Commit++
+        	}
 		log.Printf("\n\nLast log index: %v\npeer next index: %v", n.Log.LastIndex(), peer.NextIndex)
 
 		if n.Log.LastIndex() < peer.NextIndex {
 			// heartbeat
 			_, prevLogIndex, prevLogTerm := n.Log.GetEntryForRequest(n.Log.LastIndex())
-			er = newEntryRequest(-1, n.ID, n.Term, prevLogIndex, prevLogTerm, []byte("NOP"), h)
+			er = newEntryRequest(-1, n.ID, n.Term, prevLogIndex, prevLogTerm, []byte("NOP"), h, "")
 		} else {
 			entry, prevLogIndex, prevLogTerm := n.Log.GetEntryForRequest(peer.NextIndex)
-			er = newEntryRequest(entry.CmdID, n.ID, n.Term, prevLogIndex, prevLogTerm, entry.Data, h)
+			er = newEntryRequest(entry.CmdID, n.ID, n.Term, prevLogIndex, prevLogTerm, entry.Data, h, entry.State)
 		}
 		log.Printf("[%s] updating follower %s - %+v", n.ID, peer.ID, er)
 		respData, err := n.Transport.AppendEntriesRPC(peer.ID, er)
@@ -410,7 +410,8 @@ func (n *Node) updateFollowers() {
 		}
 		 h[peer.ID] = respData.Stat
 		 log.Printf("Length of h: %v", len(h))
-		if (len(h)>=(len(n.Cluster))) && f==len(n.Cluster) && n.Commit == len(n.Cluster){
+		 log.Printf("\nval of f:%v\nval of n.commit:%v\nval of er.state:%v\n", f, n.Commit, er.State)
+		if len(h)>=len(n.Cluster) && f==len(n.Cluster) && n.Commit == len(n.Cluster) && (er.State == "" || er.State=="Commited"){
                         h[n.Transport.String()] = Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}
                         log.Printf("\n\nAppending to leader log\n%v\n\n", h)
                         c := n.Entries
@@ -419,8 +420,11 @@ func (n *Node) updateFollowers() {
 			e := Entry{CmdID: c, Index: n.Log.LastIndex()+1, Term: n.Term, NodeHealth: h, Data:[]byte("NOP"), State: "Uncommited"}
                         log.Printf("\n\nEntry value: %v\n CmdID value: %v\n\n", e, c)
                         n.Log.Append(&e)
+			n.Uncommitted[c].ReplicationCount++
+			
                 }
 
+		
 
 		if er.CmdID == -1 {
 			// skip commit checks for heartbeats
@@ -434,23 +438,28 @@ func (n *Node) updateFollowers() {
 		// A log entry may only be considered committed if the entry is stored on a majority of the
 		// servers; in addition, at least one entry from the leader’s current term must also be stored
 		// on a majority of the servers.
-		majority := int32((len(n.Cluster)+1)/2 + 1)
+		majority := int32((len(n.Cluster)+1)/2) + 1
 		cr := n.Uncommitted[er.CmdID]
-		cr.ReplicationCount++
-		if cr.ReplicationCount >= majority && cr.State != Committed {
+		if respData.Success && er.State== "Uncommited"{
+			cr.ReplicationCount++
+		}
+		if cr.ReplicationCount >= majority && cr.State != Committed && f==len(n.Cluster){
 			cr.State = Committed
+			log.Printf("\n\nINSIDE MAJORITY\n\n")
 			log.Printf("[%s] !!! apply %+v", n.ID, cr)
 			err := n.StateMachine.Apply(cr)
 			if err != nil {
 				// TODO: what do we do here?
 			}
-			if(cr.ReplicationCount == majority){
-				entry, prevLogIndex, prevLogTerm := n.Log.GetEntryForRequest(n.Log.LastIndex())
-				entry.State = "Commited"
-				log.Printf("\ncommiting at node %v\n", n.ID)
-				n.Log.Append(&entry)
-				n.Commit = 0
-			}
+			entry, _, _ := n.Log.GetEntryForRequest(n.Log.LastIndex())
+			e := *entry
+			e.State = "Commited"
+			e.Index = n.Log.LastIndex()+1
+
+			log.Printf("\ncommiting at node %v %v\n", n.ID, e)
+			n.Log.Append(&e)
+			n.Commit = 0
+			
 			//cr.ResponseChan <- CommandResponse{LeaderID: n.VotedFor, Success: true}
 		}
 		peer.NextIndex++
@@ -552,7 +561,7 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 	}
 
 	log.Printf("[%s] HEARTBEAT", n.ID)
-	if er.CmID == -1{
+	if er.CmdID == -1{
 
 		log.Printf("\n\n%v\n%v\n\n", getCPUUsage(),getMemUsage())
 		return EntryResponse{Term: n.Term, Success: err == nil, Stat: Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}}, nil
@@ -570,7 +579,7 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 
 	log.Printf("[%s] ... appending %+v", n.ID, e)
 
-	if(e.State == "Uncommitted"){
+	if(e.State == "Commited"){
 		log.Printf("\ncommiting at node %v\n", n.ID)
 	}
 
