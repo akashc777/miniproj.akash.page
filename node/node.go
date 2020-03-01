@@ -110,7 +110,7 @@ type Node struct {
 	Entries	     int64
 	Log          Logger
 	Transport    Transporter
-	
+
 
 	ElectionTimeout time.Duration
 
@@ -237,6 +237,11 @@ func (n *Node) ioLoop() {
 		case <-followerTimer.C:
 			// this also acts as a heartbeat
 			n.updateFollowers()
+			if(n.State == Leader){
+				log.Printf("\nI am node %v and i am the LEADER\n", n.ID)
+			}else{
+				log.Printf("\nI am node %v and i am a FOLLOWER\n", n.ID)
+			}
 			continue
 		case <-n.exitChan:
 			n.stepDown()

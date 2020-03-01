@@ -17,7 +17,7 @@ func main()  {
 	log.SetFlags(log.Ldate | log.Lmicroseconds)
 
 
-	var e make(chan)
+	var e make(chan int)
 
 	var prip = []string{"192.168.99.104:59964", "192.168.99.105:59964", "192.168.99.106:59964"}
 
