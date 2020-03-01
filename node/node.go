@@ -337,7 +337,7 @@ func (n *Node) voteResponse(vresp VoteResponse) {
 	if vresp.VoteGranted {
 		n.voteGranted()
 
-		for _, peer := n.Cluster {
+		for _, peer := range n.Cluster {
 			if peer == vresp.CandidateID {
 				peer.NextIndex = vresp.LastLogIndex + 1
 			}
@@ -526,7 +526,7 @@ func (n *Node) doRequestVote(vr VoteRequest) (VoteResponse, error) {
 	log.Printf("[%s] doRequestVote() %+v", n.ID, vr)
 
 	if vr.Term < n.Term {
-		return VoteResponse{n.Term, false}, nil
+		return VoteResponse{Term:n.Term, VoteGranted:false}, nil
 	}
 
 	if vr.Term > n.Term {
@@ -535,11 +535,11 @@ func (n *Node) doRequestVote(vr VoteRequest) (VoteResponse, error) {
 	}
 
 	if n.VotedFor != "" && n.VotedFor != vr.CandidateID {
-		return VoteResponse{n.Term, false}, nil
+		return VoteResponse{Term:n.Term, VoteGranted:false}, nil
 	}
 
 	if n.Log.FresherThan(vr.LastLogIndex, vr.LastLogTerm) {
-		return VoteResponse{n.Term, false}, nil
+		return VoteResponse{Term:n.Term, VoteGranted:false}, nil
 	}
 
 	log.Printf("[%s] granting vote to %s", n.ID, vr.CandidateID)
