@@ -293,9 +293,9 @@ func (n *Node) promoteToLeader() {
 	log.Printf("[%s] promoteToLeader()", n.ID)
 
 	n.State = Leader
-	for _, peer := range n.Cluster {
-		peer.NextIndex = n.Log.Index()
-	}
+	//for _, peer := range n.Cluster {
+	//	peer.NextIndex = n.Log.Index()
+	//}
 }
 
 // To begin an election, a follower increments its current term and transitions to candidate state. It
@@ -339,7 +339,7 @@ func (n *Node) voteResponse(vresp VoteResponse) {
 
 		for _, peer := range n.Cluster {
 			if peer.ID == vresp.CandidateID {
-				peer.NextIndex = vresp.LastLogIndex + 1
+				peer.NextIndex = 0
 			}
 		}
 	}
@@ -419,7 +419,7 @@ func (n *Node) updateFollowers() {
 		 h[peer.ID] = respData.Stat
 		 log.Printf("Length of h: %v", len(h))
 		 log.Printf("\nval of f:%v\nval of n.commit:%v\nval of er.state:%v\n", f, n.Commit, er.State)
-		if len(h)>=len(n.Cluster) && f==len(n.Cluster) && n.Commit == len(n.Cluster) && (er.State == "" || er.State=="Commited"){
+		if  n.Log.LastIndex() == (peer.NextIndex-1) && len(h)>=len(n.Cluster) && f==len(n.Cluster) && n.Commit == len(n.Cluster) && (er.State == "" || er.State=="Commited"){
                         h[n.Transport.String()] = Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}
                         log.Printf("\n\nAppending to leader log\n%v\n\n", h)
                         c := n.Entries
@@ -451,7 +451,7 @@ func (n *Node) updateFollowers() {
 		if respData.Success && er.State== "Uncommited"{
 			cr.ReplicationCount++
 		}
-		if cr.ReplicationCount >= majority && cr.State != Committed && f==len(n.Cluster){
+		if  n.Log.LastIndex() == (peer.NextIndex) && cr.ReplicationCount >= majority && cr.State != Committed && f==len(n.Cluster){
 			cr.State = Committed
 			log.Printf("\n\nINSIDE MAJORITY\n\n")
 			log.Printf("[%s] !!! apply %+v", n.ID, cr)
@@ -463,6 +463,7 @@ func (n *Node) updateFollowers() {
 
 			log.Printf("\ncommiting at node %v %v\n", n.ID, e)
 			n.Log.Append(&e)
+			n.Entries++
 			if(e.State == "Commited"){
 				log.Printf("\ncommiting at node %v\n", n.ID)
 
