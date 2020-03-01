@@ -338,7 +338,7 @@ func (n *Node) voteResponse(vresp VoteResponse) {
 		n.voteGranted()
 
 		for _, peer := range n.Cluster {
-			if peer == vresp.CandidateID {
+			if peer.ID == vresp.CandidateID {
 				peer.NextIndex = vresp.LastLogIndex + 1
 			}
 		}
