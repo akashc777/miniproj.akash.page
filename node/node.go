@@ -593,7 +593,7 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 		log.Printf("\ncommiting at node %v\n", n.ID)
 
 		pwd, _ := os.Getwd()
-		p := fmt.Sprint(pwd, "/", n.Entries, ".json")
+		p := fmt.Sprint(pwd, "/logs/", n.Entries, ".json")
 		js, _ := json.Marshal(e)
 		Write(js, p)
 
