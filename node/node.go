@@ -110,7 +110,7 @@ type Node struct {
 	Entries	     int64
 	Log          Logger
 	Transport    Transporter
-	StateMachine Applyer
+	
 
 	ElectionTimeout time.Duration
 
@@ -126,13 +126,12 @@ type Node struct {
 	finishedElectionChan chan int
 }
 
-func NewNode(id string, transport Transporter, logger Logger, applyer Applyer) *Node {
+func NewNode(id string, transport Transporter, logger Logger) *Node {
 	node := &Node{
 		ID: id,
 
 		Log:          logger,
 		Transport:    transport,
-		StateMachine: applyer,
 
 		Uncommitted: make(map[int64]*CommandRequest),
 
@@ -448,10 +447,7 @@ func (n *Node) updateFollowers() {
 			cr.State = Committed
 			log.Printf("\n\nINSIDE MAJORITY\n\n")
 			log.Printf("[%s] !!! apply %+v", n.ID, cr)
-			err := n.StateMachine.Apply(cr)
-			if err != nil {
-				// TODO: what do we do here?
-			}
+
 			entry, _, _ := n.Log.GetEntryForRequest(n.Log.LastIndex())
 			e := *entry
 			e.State = "Commited"
