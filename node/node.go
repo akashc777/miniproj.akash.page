@@ -336,6 +336,12 @@ func (n *Node) voteResponse(vresp VoteResponse) {
 
 	if vresp.VoteGranted {
 		n.voteGranted()
+
+		for _, peer := n.Cluster {
+			if peer == vresp.CandidateID {
+				peer.NextIndex = vresp.LastLogIndex + 1
+			}
+		}
 	}
 }
 
@@ -505,6 +511,7 @@ func (n *Node) gatherVotes(vreq VoteRequest) {
 				log.Printf("[%s] error in RequestVoteRPC() to %s - %s", n.ID, p, err)
 				return
 			}
+
 			n.voteResponseChan <- vresp
 		}(peer.ID)
 	}
@@ -538,7 +545,7 @@ func (n *Node) doRequestVote(vr VoteRequest) (VoteResponse, error) {
 	log.Printf("[%s] granting vote to %s", n.ID, vr.CandidateID)
 
 	n.VotedFor = vr.CandidateID
-	return VoteResponse{n.Term, true}, nil
+	return VoteResponse{Term:n.Term, VoteGranted:true, LastLogIndex:n.Log.LastIndex(), CandidateID: n.Transport.String()}, nil
 }
 
 func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {

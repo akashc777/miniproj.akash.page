@@ -66,4 +66,6 @@ type VoteRequest struct {
 type VoteResponse struct {
 	Term        int64 `json:"term"`
 	VoteGranted bool  `json:"vote_granted"`
+	LastLogIndex int64  `json:"last_log_index"`
+	CandidateID  string `json:"candidate_id"`
 }
