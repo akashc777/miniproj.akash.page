@@ -45,12 +45,13 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-	//"fmt"
+	"fmt"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 	//"sort"
-	//"os/exec"
+	"os"
 	"encoding/binary"
+	"encoding/json"
 	"math"
 )
 
@@ -421,10 +422,10 @@ func (n *Node) updateFollowers() {
                         log.Printf("\n\nEntry value: %v\n CmdID value: %v\n\n", e, c)
                         n.Log.Append(&e)
 			n.Uncommitted[c].ReplicationCount++
-			
+
                 }
 
-		
+
 
 		if er.CmdID == -1 {
 			// skip commit checks for heartbeats
@@ -459,7 +460,7 @@ func (n *Node) updateFollowers() {
 			log.Printf("\ncommiting at node %v %v\n", n.ID, e)
 			n.Log.Append(&e)
 			n.Commit = 0
-			
+
 			//cr.ResponseChan <- CommandResponse{LeaderID: n.VotedFor, Success: true}
 		}
 		peer.NextIndex++
@@ -579,9 +580,6 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 
 	log.Printf("[%s] ... appending %+v", n.ID, e)
 
-	if(e.State == "Commited"){
-		log.Printf("\ncommiting at node %v\n", n.ID)
-	}
 
 	err = n.Log.Append(e)
 
@@ -591,6 +589,15 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 		n.Entries++
 	}
 
+	if(e.State == "Commited"){
+		log.Printf("\ncommiting at node %v\n", n.ID)
+
+		pwd, _ := os.Getwd()
+		p := fmt.Sprint(pwd, "/", n.Entries, ".json")
+		js, _ := json.Marshal(e)
+		Write(js, p)
+
+	}
 
 	return EntryResponse{Term: n.Term, Success: err == nil, Stat: Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}}, nil
 }
