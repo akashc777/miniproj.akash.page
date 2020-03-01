@@ -38,7 +38,7 @@ func main()  {
 
 	}
 
-	node[currentnode].Start()
+	node.Start()
 
 	select{
 		case <-e:

@@ -457,6 +457,15 @@ func (n *Node) updateFollowers() {
 
 			log.Printf("\ncommiting at node %v %v\n", n.ID, e)
 			n.Log.Append(&e)
+			if(e.State == "Commited"){
+				log.Printf("\ncommiting at node %v\n", n.ID)
+
+				pwd, _ := os.Getwd()
+				p := fmt.Sprint(pwd, "/logs/", n.Entries, ".json")
+				js, _ := json.Marshal(e)
+				Write(js, p)
+
+			}
 			n.Commit = 0
 
 			//cr.ResponseChan <- CommandResponse{LeaderID: n.VotedFor, Success: true}
