@@ -418,8 +418,8 @@ func (n *Node) updateFollowers() {
 		}
 		 h[peer.ID] = respData.Stat
 		 log.Printf("Length of h: %v", len(h))
-		 log.Printf("\nval of f:%v\nval of n.commit:%v\nval of er.state:%v\n", f, n.Commit, er.State)
-		if  n.Log.LastIndex() == (peer.NextIndex-1) && len(h)>=len(n.Cluster) && f==len(n.Cluster) && n.Commit == len(n.Cluster) && (er.State == "" || er.State=="Commited"){
+		log.Printf("\nval of f:%v\nval of n.commit:%v\nval of er.state:%v\ner.CmdID: %v", f, n.Commit, er.State, er.CmdID)
+		if  n.Log.LastIndex() == (peer.NextIndex-1) && f==len(n.Cluster) && n.Commit == len(n.Cluster){
                         h[n.Transport.String()] = Health{CPUUsage: getCPUUsage(), MemeoryUsage: getMemUsage(), Status: 1}
                         log.Printf("\n\nAppending to leader log\n%v\n\n", h)
                         c := n.Entries
@@ -447,10 +447,18 @@ func (n *Node) updateFollowers() {
 		// servers; in addition, at least one entry from the leader’s current term must also be stored
 		// on a majority of the servers.
 		majority := int32((len(n.Cluster)+1)/2) + 1
-		cr := n.Uncommitted[er.CmdID]
-		if respData.Success && er.State== "Uncommited"{
+		var cr *CommandRequest = &CommandRequest{}
+		log.Printf("\nLine 451, value of cr : %v\n", cr)
+		if n.Log.LastIndex() == (peer.NextIndex) && respData.Success && er.State== "Uncommited"{
+			if n.Uncommitted[er.CmdID] == nil {
+				n.Uncommitted[er.CmdID] = &CommandRequest{}
+			}
+			cr = n.Uncommitted[er.CmdID]
+			log.Printf("\nLine 453\n")
 			cr.ReplicationCount++
+			log.Printf("\nLine 455\n")     
 		}
+		log.Printf("\nLine 457\n")
 		if  n.Log.LastIndex() == (peer.NextIndex) && cr.ReplicationCount >= majority && cr.State != Committed && f==len(n.Cluster){
 			cr.State = Committed
 			log.Printf("\n\nINSIDE MAJORITY\n\n")
