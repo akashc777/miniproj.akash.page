@@ -456,7 +456,7 @@ func (n *Node) updateFollowers() {
 			cr = n.Uncommitted[er.CmdID]
 			log.Printf("\nLine 453\n")
 			cr.ReplicationCount++
-			log.Printf("\nLine 455\n")     
+			log.Printf("\nLine 455\n")
 		}
 		log.Printf("\nLine 457\n")
 		if  n.Log.LastIndex() == (peer.NextIndex) && cr.ReplicationCount >= majority && cr.State != Committed && f==len(n.Cluster){
@@ -475,6 +475,7 @@ func (n *Node) updateFollowers() {
 			if(e.State == "Commited"){
 				log.Printf("\ncommiting at node %v\n", n.ID)
 
+				e.VotedFor = n.VotedFor
 				pwd, _ := os.Getwd()
 				p := fmt.Sprint(pwd, "/logs/", n.Entries, ".json")
 				js, _ := json.Marshal(e)
@@ -614,7 +615,7 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 
 	if(e.State == "Commited"){
 		log.Printf("\ncommiting at node %v\n", n.ID)
-
+		e.VotedFor = n.VotedFor
 		pwd, _ := os.Getwd()
 		p := fmt.Sprint(pwd, "/logs/", n.Entries, ".json")
 		js, _ := json.Marshal(e)
