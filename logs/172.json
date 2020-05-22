@@ -1,0 +1,1 @@
+{"CmdID":85,"Index":171,"Term":1,"Data":"Tk9Q","NodeHealth":{"127.0.0.1:55703":{"cpuusage":34.65346534653465,"memeoryusage":55.66141605377197,"status":1},"127.0.0.1:55704":{"cpuusage":28.000000000000004,"memeoryusage":55.623817443847656,"status":1},"127.0.0.1:55705":{"cpuusage":34,"memeoryusage":55.657005310058594,"status":1}},"State":"Commited","VotedFor":"127.0.0.1:55703"}

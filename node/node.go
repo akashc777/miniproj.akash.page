@@ -1,5 +1,3 @@
-// pontoon is a library implementing the Raft distributed consensus algorithm
-//
 // (excerpts from the paper https://ramcloud.stanford.edu/wiki/download/attachments/11370504/raft.pdf)
 //
 // Raft implements consensus by ﬁrst electing a distinguished leader, then giving the leader complete
@@ -106,6 +104,7 @@ type Node struct {
 	Uncommitted  map[int64]*CommandRequest
 
 	Commit		   int
+	Lastcommit	     int64
 
 	Entries	     int64
 	Log          Logger
@@ -591,7 +590,8 @@ func (n *Node) doAppendEntries(er EntryRequest) (EntryResponse, error) {
 
 	if(e.State == "Commited"){
 		log.Printf("\ncommiting at node %v\n", n.ID)
-
+		e.VotedFor = n.VotedFor
+		n.Lastcommit=n.Entries
 		pwd, _ := os.Getwd()
 		p := fmt.Sprint(pwd, "/logs/", n.Entries, ".json")
 		js, _ := json.Marshal(e)

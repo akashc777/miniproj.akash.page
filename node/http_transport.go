@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"net"
 	"net/http"
 	"strconv"
@@ -56,11 +57,14 @@ func (t *HTTPTransport) String() string {
 }
 
 func (t *HTTPTransport) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	if req.Method != "POST" {
-		apiResponse(w, 405, nil)
-	}
+	//if req.Method != "POST" {
+//		apiResponse(w, 405, nil)
+//	}
 
 	switch req.URL.Path {
+
+	case "/frontApi":
+		t.frontEnd(w, req)
 	case "/ping":
 		t.pingHandler(w, req)
 	case "/request_vote":
@@ -138,6 +142,26 @@ func (t *HTTPTransport) appendEntriesHandler(w http.ResponseWriter, req *http.Re
 	apiResponse(w, 200, resp)
 }
 
+func (t *HTTPTransport) frontEnd(w http.ResponseWriter, req *http.Request) {
+
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	pwd, _ := os.Getwd()
+	p := fmt.Sprint(pwd, "/logs/", t.node.Lastcommit, ".json")
+	err, resp := Read(p)
+	if err != nil {
+		apiResponse(w, 500, nil)
+	}
+
+	response, err := json.Marshal(resp)
+	if err != nil {
+		apiResponse(w, 500, nil)
+	}
+
+	w.Write(response)
+}
+
 // TODO: split this out into peer transport and client transport
 // move into client transport
 func (t *HTTPTransport) commandHandler(w http.ResponseWriter, req *http.Request) {
@@ -191,7 +215,7 @@ func (t *HTTPTransport) AppendEntriesRPC(address string, entryRequest EntryReque
 	if err != nil {
 		return EntryResponse{}, err
 	}
-	
+
 	err = json.Unmarshal(data, &er)
 	//fmt.Printf("\n\n%v\n\n", respdata)
 

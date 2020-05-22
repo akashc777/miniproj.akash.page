@@ -20,6 +20,7 @@ type Entry struct {
 	Data  []byte
 	NodeHealth map[string]Health
 	State string
+	VotedFor string
 }
 
 type Log struct {
